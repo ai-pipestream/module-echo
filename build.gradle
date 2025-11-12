@@ -87,9 +87,9 @@ publishing {
                 artifact.builtBy tasks.named('quarkusBuild')
             }
             pom {
-                name.set('mapping Service')
-                description.set('User mapping management and authentication service')
-                url.set('https://github.com/ai-pipestream/mapping-service')
+                name.set('Module Echo')
+                description.set('Echo module for Pipestream')
+                url.set('https://github.com/ai-pipestream/module-echo')
 
                 licenses {
                     license {
@@ -106,9 +106,9 @@ publishing {
                 }
 
                 scm {
-                    connection.set('scm:git:git://github.com/ai-pipestream/mapping-service.git')
-                    developerConnection.set('scm:git:ssh://github.com/ai-pipestream/mapping-service.git')
-                    url.set('https://github.com/ai-pipestream/mapping-service')
+                    connection.set('scm:git:git://github.com/ai-pipestream/module-echo.git')
+                    developerConnection.set('scm:git:ssh://github.com/ai-pipestream/module-echo.git')
+                    url.set('https://github.com/ai-pipestream/module-echo')
                 }
             }
         }
@@ -120,13 +120,11 @@ publishing {
         if (githubToken.isPresent()) {
             maven {
                 name = "GitHubPackages"
-                url = uri("https://maven.pkg.github.com/ai-pipestream/mapping-service")
+                def ghRepo = providers.environmentVariable("GITHUB_REPOSITORY").getOrElse("ai-pipestream/module-echo")
+                url = uri("https://maven.pkg.github.com/${ghRepo}")
                 credentials {
                     username = providers.environmentVariable("GITHUB_ACTOR").getOrElse("github-actions")
                     password = githubToken.get()
-                }
-                mavenContent {
-                    releasesOnly()
                 }
             }
         }
