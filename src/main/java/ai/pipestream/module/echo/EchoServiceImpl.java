@@ -1,10 +1,10 @@
-package io.pipeline.module.echo;
+package ai.pipestream.module.echo;
 
-import io.pipeline.api.annotation.GrpcServiceRegistration;
-import io.pipeline.api.annotation.ProcessingBuffered;
-import io.pipeline.data.module.*;
-import io.pipeline.data.util.proto.PipeDocTestDataFactory;
-import io.pipeline.data.v1.PipeDoc;
+import ai.pipestream.api.annotation.GrpcServiceRegistration;
+import ai.pipestream.api.annotation.ProcessingBuffered;
+import ai.pipestream.data.module.*;
+import ai.pipestream.data.util.proto.PipeDocTestDataFactory;
+import ai.pipestream.data.v1.PipeDoc;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
@@ -46,15 +46,15 @@ public class EchoServiceImpl extends MutinyPipeStepProcessorGrpc.PipeStepProcess
             PipeDoc.Builder docBuilder = originalDoc.toBuilder();
 
             // Get existing search metadata or create new one
-            io.pipeline.data.v1.SearchMetadata.Builder searchMetadataBuilder = 
+            ai.pipestream.data.v1.SearchMetadata.Builder searchMetadataBuilder = 
                 originalDoc.hasSearchMetadata() 
                     ? originalDoc.getSearchMetadata().toBuilder()
-                    : io.pipeline.data.v1.SearchMetadata.newBuilder();
+                    : ai.pipestream.data.v1.SearchMetadata.newBuilder();
 
             // Add or update tags with processing metadata
-            io.pipeline.data.v1.Tags.Builder tagsBuilder = searchMetadataBuilder.hasTags()
+            ai.pipestream.data.v1.Tags.Builder tagsBuilder = searchMetadataBuilder.hasTags()
                     ? searchMetadataBuilder.getTags().toBuilder() 
-                    : io.pipeline.data.v1.Tags.newBuilder();
+                    : ai.pipestream.data.v1.Tags.newBuilder();
 
             // Add echo module metadata
             tagsBuilder.putTagData("processed_by_echo", applicationName);

@@ -2,12 +2,17 @@ plugins {
     alias(libs.plugins.java)
     alias(libs.plugins.quarkus)
     alias(libs.plugins.maven.publish)
+    id 'signing'
+    id 'com.gradleup.nmcp' version '1.2.0'
 }
 
-
+def pipelineBomVersion = findProperty('pipelineBomVersion') ?: '0.1.2-SNAPSHOT'
 
 dependencies {
-    implementation platform('io.pipeline:pipeline-bom:1.0.0-SNAPSHOT')
+    implementation 'io.quarkus:quarkus-container-image-docker'
+    // Import pipeline BOM to align all managed versions
+    implementation platform("ai.pipestream:pipeline-bom:${pipelineBomVersion}")
+
     implementation 'io.quarkus:quarkus-grpc'
     implementation 'io.quarkus:quarkus-arc'
 
@@ -29,17 +34,19 @@ dependencies {
     
     // Mock services for testing
 //    testImplementation project(':grpc:grpc-wiremock')
-
-    implementation 'io.pipeline:grpc-stubs:1.0.0-SNAPSHOT'
-    implementation 'io.pipeline:pipeline-commons'
-    implementation 'io.pipeline:pipeline-api'
-    implementation 'io.pipeline:data-util'
-    implementation 'io.pipeline:dynamic-grpc'
-    implementation 'io.pipeline:dynamic-grpc-registration-clients'
+    testImplementation libs.pipestream.grpc.wiremock
+    // Pipestream libraries - versions managed entirely by the BOM/catalog
+    implementation libs.pipestream.compose.devservices
+    implementation libs.pipestream.grpc.stubs
+    implementation libs.pipestream.commons
+    implementation libs.pipestream.data.util
+    implementation libs.pipestream.api
+    implementation libs.pipestream.dynamic.grpc
+    implementation libs.pipestream.dynamic.grpc.registration.clients
 }
 
-group 'io.pipeline.module'
-version '1.0.0-SNAPSHOT'
+group = "ai.pipestream.module"
+version = "${pipelineBomVersion}"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -55,7 +62,7 @@ test {
 // Integration test configuration for large messages
 tasks.withType(Test) {
     if (name.contains('IntTest')) {
-        jvmArgs '-Xmx6g', '-Xms2g', '-XX:MaxDirectMemorySize=2g'
+        jvmArgs '-Xmx6g', '-XX:MaxDirectMemorySize=2g'
     }
 }
 
@@ -79,59 +86,67 @@ publishing {
                 artifact.classifier = 'runner'
                 artifact.builtBy tasks.named('quarkusBuild')
             }
-            pom { pom ->
-                name.set('Module Echo')
-                description.set('Echo service module for testing and development in the Pipeline platform')
-                url.set('https://github.com/io-pipeline/module-echo')
+            pom {
+                name.set('mapping Service')
+                description.set('User mapping management and authentication service')
+                url.set('https://github.com/ai-pipestream/mapping-service')
 
                 licenses {
                     license {
-                        name.set('Apache License 2.0')
-                        url.set('https://www.apache.org/licenses/LICENSE-2.0')
+                        name.set('MIT License')
+                        url.set('https://opensource.org/licenses/MIT')
                     }
                 }
 
                 developers {
                     developer {
                         id.set('krickert')
-                        email.set('krickert@rokkon.com')
                         name.set('Pipeline Engine Team')
                     }
                 }
 
                 scm {
-                    connection.set('scm:git:git://github.com/io-pipeline/module-echo.git')
-                    developerConnection.set('scm:git:ssh://github.com/io-pipeline/module-echo.git')
-                    url.set('https://github.com/io-pipeline/module-echo')
+                    connection.set('scm:git:git://github.com/ai-pipestream/mapping-service.git')
+                    developerConnection.set('scm:git:ssh://github.com/ai-pipestream/mapping-service.git')
+                    url.set('https://github.com/ai-pipestream/mapping-service')
                 }
             }
         }
     }
-
     repositories {
         // Publish to Maven Local for development
         mavenLocal()
-
-        // Publish to Reposilite (primary artifact repository)
-        maven {
-            name = "Reposilite"
-            url = uri(version.toString().endsWith('-SNAPSHOT')
-                ? "https://maven.rokkon.com/snapshots"
-                : "https://maven.rokkon.com/releases")
-            credentials {
-                username = project.findProperty("reposilite.user") ?: System.getenv("REPOS_USER") ?: "admin"
-                password = project.findProperty("reposilite.token") ?: System.getenv("REPOS_PAT")
+        def githubToken = providers.environmentVariable("GITHUB_TOKEN")
+        if (githubToken.isPresent()) {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/ai-pipestream/mapping-service")
+                credentials {
+                    username = providers.environmentVariable("GITHUB_ACTOR").getOrElse("github-actions")
+                    password = githubToken.get()
+                }
+                mavenContent {
+                    releasesOnly()
+                }
             }
         }
+    }
+}
 
-        // Publish to Gitea Maven registry (backup)
-        maven {
-            name = "Gitea"
-            url = uri("https://git.rokkon.com/api/packages/io-pipeline/maven")
-            credentials {
-                username = project.findProperty("gitea.user") ?: System.getenv("GIT_USER") ?: "krickert"
-                password = project.findProperty("gitea.token") ?: System.getenv("GIT_TOKEN")
-            }
-        }
+signing {
+    def signingKey = System.getenv("GPG_SIGNING_KEY")
+    def signingPassword = System.getenv("GPG_SIGNING_PASSPHRASE")
+
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
+}
+
+nmcp {
+    publishAllPublicationsToCentralPortal {
+        username = providers.environmentVariable("MAVEN_CENTRAL_USERNAME")
+        password = providers.environmentVariable("MAVEN_CENTRAL_PASSWORD")
+        publishingType = "AUTOMATIC"
     }
 }

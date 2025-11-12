@@ -1,10 +1,9 @@
-package io.pipeline.module.echo;
+package ai.pipestream.module.echo;
 
-import io.pipeline.common.service.ProcessingBufferManager;
-import io.pipeline.common.util.ProcessingBuffer;
-import io.pipeline.data.module.*;
-import io.pipeline.data.util.proto.PipeDocTestDataFactory;
-import io.pipeline.data.v1.PipeDoc;
+import ai.pipestream.common.service.ProcessingBufferManager;
+import ai.pipestream.common.util.ProcessingBuffer;
+import ai.pipestream.data.module.*;
+import ai.pipestream.data.v1.PipeDoc;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -16,7 +15,6 @@ import io.quarkus.grpc.GrpcClient;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -36,7 +34,7 @@ public class ProcessingBufferAccessTest {
     ProcessingBufferManager bufferManager;
 
     @Inject
-    PipeDocTestDataFactory pipeDocTestDataFactory;
+    ai.pipestream.data.util.proto.PipeDocTestDataFactory pipeDocTestDataFactory;
 
     @GrpcClient("echo-service")
     PipeStepProcessor echoService;

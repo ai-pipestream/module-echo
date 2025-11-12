@@ -284,3 +284,10 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+.gradle
+.idea
+build
+.claude
+.vscode
+.settings
+.DS_Store

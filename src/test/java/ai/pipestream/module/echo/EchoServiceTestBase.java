@@ -1,10 +1,10 @@
-package io.pipeline.module.echo;
+package ai.pipestream.module.echo;
 
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
-import io.pipeline.data.module.*;
-import io.pipeline.data.util.proto.PipeDocTestDataFactory;
-import io.pipeline.data.v1.PipeDoc;
+import ai.pipestream.data.module.*;
+import ai.pipestream.data.util.proto.PipeDocTestDataFactory;
+import ai.pipestream.data.v1.PipeDoc;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.junit.jupiter.api.Test;
 
@@ -181,7 +181,7 @@ public abstract class EchoServiceTestBase {
 
         PipeDoc largeDoc = PipeDoc.newBuilder()
                 .setDocId("large-doc")
-                .setSearchMetadata(io.pipeline.data.v1.SearchMetadata.newBuilder()
+                .setSearchMetadata(ai.pipestream.data.v1.SearchMetadata.newBuilder()
                         .setBody(largeBody.toString())
                         .setTitle("Large Document Test")
                         .build())
@@ -218,7 +218,7 @@ public abstract class EchoServiceTestBase {
 
         PipeDoc docWithCustomData = PipeDoc.newBuilder()
                 .setDocId("custom-data-doc")
-                .setSearchMetadata(io.pipeline.data.v1.SearchMetadata.newBuilder()
+                .setSearchMetadata(ai.pipestream.data.v1.SearchMetadata.newBuilder()
                         .setBody("Document with existing custom data")
                         .setCustomFields(existingCustomData)
                         .build())

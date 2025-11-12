@@ -1,4 +1,4 @@
-package io.pipeline.module.echo;
+package ai.pipestream.module.echo;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
 

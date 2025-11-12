@@ -1,7 +1,7 @@
-package io.pipeline.module.echo;
+package ai.pipestream.module.echo;
 
-import io.pipeline.data.module.MutinyPipeStepProcessorGrpc;
-import io.pipeline.data.util.proto.PipeDocTestDataFactory;
+import ai.pipestream.data.module.MutinyPipeStepProcessorGrpc;
+import ai.pipestream.data.util.proto.PipeDocTestDataFactory;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

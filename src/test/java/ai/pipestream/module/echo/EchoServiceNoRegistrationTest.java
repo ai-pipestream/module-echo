@@ -1,12 +1,9 @@
-package io.pipeline.module.echo;
+package ai.pipestream.module.echo;
+import ai.pipestream.data.util.proto.PipeDocTestDataFactory;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.pipeline.data.module.MutinyPipeStepProcessorGrpc;
-import io.pipeline.data.module.PipeStepProcessor;
-import io.pipeline.data.util.proto.PipeDocTestDataFactory;
-import io.pipeline.data.util.proto.ProtobufTestDataHelper;
+import ai.pipestream.data.module.MutinyPipeStepProcessorGrpc;
 import io.quarkus.grpc.GrpcClient;
-import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
@@ -14,7 +11,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 /**
  * This test verifies that the Echo service can start and function correctly
