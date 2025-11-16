@@ -11,7 +11,8 @@ rootProject.name = 'module-echo'
 dependencyResolutionManagement {
     versionCatalogs {
         libs {
-            from("ai.pipestream:pipeline-bom-catalog:0.1.2-SNAPSHOT")
+            // Import version catalog from published BOM
+            from("ai.pipestream:pipeline-bom-catalog:0.2.2")
         }
     }
 
