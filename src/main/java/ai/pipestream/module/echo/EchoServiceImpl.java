@@ -1,9 +1,6 @@
 package ai.pipestream.module.echo;
 
-import ai.pipestream.api.annotation.GrpcServiceRegistration;
-import ai.pipestream.api.annotation.ProcessingBuffered;
-import ai.pipestream.data.module.*;
-import ai.pipestream.data.util.proto.PipeDocTestDataFactory;
+import ai.pipestream.data.module.v1.*;
 import ai.pipestream.data.v1.PipeDoc;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
@@ -16,27 +13,20 @@ import java.time.Instant;
 
 @GrpcService
 @Singleton
-@GrpcServiceRegistration(
-    metadata = {"category=testing", "complexity=simple"}
-)
-public class EchoServiceImpl extends MutinyPipeStepProcessorGrpc.PipeStepProcessorImplBase {
+public class EchoServiceImpl implements PipeStepProcessorService {
 
     private static final Logger LOG = Logger.getLogger(EchoServiceImpl.class);
 
-    @ConfigProperty(name = "quarkus.application.name")
+    @ConfigProperty(name = "quarkus.application.name", defaultValue = "echo-service")
     String applicationName;
 
-    @Inject
-    PipeDocTestDataFactory pipeDocTestDataFactory;
-
     @Override
-    @ProcessingBuffered(type = PipeDoc.class, enabled = "${processing.buffer.enabled:false}")
-    public Uni<ModuleProcessResponse> processData(ModuleProcessRequest request) {
+    public Uni<ProcessDataResponse> processData(ProcessDataRequest request) {
         LOG.debugf("Echo service received document: %s", 
                  request.hasDocument() ? request.getDocument().getDocId() : "no document");
 
         // Build response with success status
-        ModuleProcessResponse.Builder responseBuilder = ModuleProcessResponse.newBuilder()
+        ProcessDataResponse.Builder responseBuilder = ProcessDataResponse.newBuilder()
                 .setSuccess(true)
                 .addProcessorLogs("Echo service successfully processed document");
 
@@ -83,18 +73,18 @@ public class EchoServiceImpl extends MutinyPipeStepProcessorGrpc.PipeStepProcess
             responseBuilder.addProcessorLogs("Echo service added metadata to document");
         }
 
-        ModuleProcessResponse response = responseBuilder.build();
+        ProcessDataResponse response = responseBuilder.build();
         LOG.debugf("Echo service returning success: %s", response.getSuccess());
 
         return Uni.createFrom().item(response);
     }
 
     @Override
-    public Uni<ServiceRegistrationMetadata> getServiceRegistration(RegistrationRequest request) {
+    public Uni<GetServiceRegistrationResponse> getServiceRegistration(GetServiceRegistrationRequest request) {
         LOG.debug("Echo service registration requested");
 
         // Build a more comprehensive registration response with metadata
-        ServiceRegistrationMetadata.Builder responseBuilder = ServiceRegistrationMetadata.newBuilder()
+        GetServiceRegistrationResponse.Builder responseBuilder = GetServiceRegistrationResponse.newBuilder()
                 .setModuleName(applicationName)
                 .setVersion("1.0.0")
                 .setDisplayName("Echo Service")
@@ -151,38 +141,5 @@ public class EchoServiceImpl extends MutinyPipeStepProcessorGrpc.PipeStepProcess
                 .setHealthCheckMessage("Service is healthy");
             return Uni.createFrom().item(responseBuilder.build());
         }
-    }
-
-    @Override
-    public Uni<ModuleProcessResponse> testProcessData(ModuleProcessRequest request) {
-        LOG.debug("TestProcessData called - executing test version of processing");
-
-        // For test processing, create a test document if none provided
-        if (request == null || !request.hasDocument()) {
-            PipeDoc testDoc = pipeDocTestDataFactory.createComplexDocument(10101);
-
-            ServiceMetadata testMetadata = ServiceMetadata.newBuilder()
-                    .setStreamId("test-stream")
-                    .setPipeStepName("test-step")
-                    .setPipelineName("test-pipeline")
-                    .build();
-
-            request = ModuleProcessRequest.newBuilder()
-                    .setDocument(testDoc)
-                    .setMetadata(testMetadata)
-                    .build();
-        }
-
-        // Process normally but with test flag in logs
-        return processData(request)
-                .onItem().transform(response -> {
-                    // Add test marker to logs
-                    ModuleProcessResponse.Builder builder = response.toBuilder();
-                    for (int i = 0; i < builder.getProcessorLogsCount(); i++) {
-                        builder.setProcessorLogs(i, "[TEST] " + builder.getProcessorLogs(i));
-                    }
-                    builder.addProcessorLogs("[TEST] Echo module test validation completed successfully");
-                    return builder.build();
-                });
     }
 }
