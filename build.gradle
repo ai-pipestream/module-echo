@@ -11,12 +11,13 @@ plugins {
     alias(libs.plugins.proto.toolchain)
 }
 
-def pipestreamBomVersion = findProperty('pipestreamBomVersion')
+def pipestreamBomVersion = findProperty('pipestreamBomVersion') ?: '0.7.21-SNAPSHOT'
 
 // Axion-release configuration for automatic versioning
 scmVersion {
     tag {
         prefix = 'v'
+        initialVersion { config, position -> '0.0.1' }
     }
     checks {
         uncommittedChanges = false
@@ -25,7 +26,7 @@ scmVersion {
     }
 }
 
-// Proto toolchain configuration
+// Proto toolchain configuration - uses git-proto-workspace mode for cross-module imports
 pipestreamProtos {
     sourceMode = 'git-proto-workspace'
     gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
@@ -67,6 +68,7 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-java-util'
 
     // Testing
+    testImplementation platform("ai.pipestream:pipestream-bom:${pipestreamBomVersion}")
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'
     testImplementation libs.hamcrest.core
@@ -137,16 +139,20 @@ processTestResources {
 // Publishing configuration
 publishing {
     publications {
-        create('maven', MavenPublication) {
+        maven(MavenPublication) { publication ->
             from components.java
-            pom {
+            artifact(file("${buildDir}/quarkus-app/quarkus-run.jar")) { artifact ->
+                artifact.classifier = 'runner'
+                artifact.builtBy tasks.named('quarkusBuild')
+            }
+            pom { pom ->
                 name.set('Module Echo')
                 description.set('Simple Echo module for testing Pipestream pipelines')
                 url.set('https://github.com/ai-pipestream/module-echo')
                 licenses {
                     license {
                         name.set('MIT License')
-                        url.set('https://opensource.org/licenses/MIT')
+                        url.set('https://opensource.org/license/MIT')
                     }
                 }
                 developers {

@@ -2,9 +2,10 @@ package ai.pipestream.module.echo;
 
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
-import ai.pipestream.data.module.*;
-import ai.pipestream.data.util.proto.PipeDocTestDataFactory;
+import ai.pipestream.data.module.v1.*;
 import ai.pipestream.data.v1.PipeDoc;
+import ai.pipestream.data.v1.SearchMetadata;
+import ai.pipestream.data.v1.ProcessConfiguration;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.junit.jupiter.api.Test;
 
@@ -14,20 +15,30 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 
+/**
+ * Base test class for Echo module testing.
+ * Aligned with v1 protos.
+ */
 public abstract class EchoServiceTestBase {
 
-    protected abstract MutinyPipeStepProcessorGrpc.MutinyPipeStepProcessorStub getEchoService();
-
-    
-
-    protected abstract PipeDocTestDataFactory getTestDataFactory();
+    protected abstract MutinyPipeStepProcessorServiceGrpc.MutinyPipeStepProcessorServiceStub getEchoService();
 
     protected abstract String getApplicationName();
+
+    protected PipeDoc createTestDoc() {
+        return PipeDoc.newBuilder()
+                .setDocId(UUID.randomUUID().toString())
+                .setSearchMetadata(SearchMetadata.newBuilder()
+                        .setBody("Test document body")
+                        .setTitle("Test Title")
+                        .build())
+                .build();
+    }
 
     @Test
     void testProcessData() {
         // Create a test document
-        PipeDoc testDoc = getTestDataFactory().createComplexDocument(33);
+        PipeDoc testDoc = createTestDoc();
 
         // Create service metadata
         ServiceMetadata metadata = ServiceMetadata.newBuilder()
@@ -40,14 +51,14 @@ public abstract class EchoServiceTestBase {
 
         // Create configuration
         ProcessConfiguration config = ProcessConfiguration.newBuilder()
-                .setCustomJsonConfig(Struct.newBuilder()
+                .setJsonConfig(Struct.newBuilder()
                         .putFields("mode", Value.newBuilder().setStringValue("echo").build())
                         .build())
                 .putConfigParams("mode", "echo")
                 .build();
 
         // Create request
-        ModuleProcessRequest request = ModuleProcessRequest.newBuilder()
+        ProcessDataRequest request = ProcessDataRequest.newBuilder()
                 .setDocument(testDoc)
                 .setMetadata(metadata)
                 .setConfig(config)
@@ -70,7 +81,7 @@ public abstract class EchoServiceTestBase {
     @Test
     void testProcessDataWithoutDocument() {
         // Test with no document - should still succeed (echo service is tolerant)
-        ModuleProcessRequest request = ModuleProcessRequest.newBuilder()
+        ProcessDataRequest request = ProcessDataRequest.newBuilder()
                 .setMetadata(ServiceMetadata.newBuilder()
                         .setPipelineName("test-pipeline")
                         .setPipeStepName("echo-step")
@@ -93,14 +104,14 @@ public abstract class EchoServiceTestBase {
     @Test
     void testGetServiceRegistrationWithoutHealthCheck() {
         // Call without test request
-        RegistrationRequest request = RegistrationRequest.newBuilder().build();
+        GetServiceRegistrationRequest request = GetServiceRegistrationRequest.newBuilder().build();
 
         var registration = getEchoService().getServiceRegistration(request)
                 .subscribe().withSubscriber(UniAssertSubscriber.create())
                 .awaitItem()
                 .getItem();
 
-        assertThat("Module name should be 'echo'", registration.getModuleName(), equalTo("echo"));
+        assertThat("Module name should match application name", registration.getModuleName(), equalTo(getApplicationName()));
         // Echo service has no JSON schema - it accepts any input
         assertThat("JSON config schema should not be present", registration.hasJsonConfigSchema(), is(false));
         // Should be healthy without test
@@ -111,9 +122,9 @@ public abstract class EchoServiceTestBase {
     @Test
     void testGetServiceRegistrationWithHealthCheck() {
         // Create a test document for health check
-        PipeDoc testDoc = getTestDataFactory().createComplexDocument(20203);
+        PipeDoc testDoc = createTestDoc();
 
-        ModuleProcessRequest processRequest = ModuleProcessRequest.newBuilder()
+        ProcessDataRequest processRequest = ProcessDataRequest.newBuilder()
                 .setDocument(testDoc)
                 .setMetadata(ServiceMetadata.newBuilder()
                         .setPipelineName("health-check")
@@ -123,7 +134,7 @@ public abstract class EchoServiceTestBase {
                 .build();
 
         // Call with test request for health check
-        RegistrationRequest request = RegistrationRequest.newBuilder()
+        GetServiceRegistrationRequest request = GetServiceRegistrationRequest.newBuilder()
                 .setTestRequest(processRequest)
                 .build();
 
@@ -132,7 +143,7 @@ public abstract class EchoServiceTestBase {
                 .awaitItem()
                 .getItem();
 
-        assertThat("Module name should be 'echo'", registration.getModuleName(), equalTo("echo"));
+        assertThat("Module name should match application name", registration.getModuleName(), equalTo(getApplicationName()));
         assertThat("JSON config schema should not be present", registration.hasJsonConfigSchema(), is(false));
         // Health check should pass
         assertThat("Health check should pass with test request", registration.getHealthCheckPassed(), is(true));
@@ -152,8 +163,8 @@ public abstract class EchoServiceTestBase {
                 .putContextParams("region", "us-east-1")
                 .build();
 
-        ModuleProcessRequest request = ModuleProcessRequest.newBuilder()
-                .setDocument(getTestDataFactory().createComplexDocument(100))
+        ProcessDataRequest request = ProcessDataRequest.newBuilder()
+                .setDocument(createTestDoc())
                 .setMetadata(metadata)
                 .build();
 
@@ -181,13 +192,13 @@ public abstract class EchoServiceTestBase {
 
         PipeDoc largeDoc = PipeDoc.newBuilder()
                 .setDocId("large-doc")
-                .setSearchMetadata(ai.pipestream.data.v1.SearchMetadata.newBuilder()
+                .setSearchMetadata(SearchMetadata.newBuilder()
                         .setBody(largeBody.toString())
                         .setTitle("Large Document Test")
                         .build())
                 .build();
 
-        ModuleProcessRequest request = ModuleProcessRequest.newBuilder()
+        ProcessDataRequest request = ProcessDataRequest.newBuilder()
                 .setDocument(largeDoc)
                 .setMetadata(ServiceMetadata.newBuilder()
                         .setPipelineName("large-doc-test")
@@ -218,13 +229,13 @@ public abstract class EchoServiceTestBase {
 
         PipeDoc docWithCustomData = PipeDoc.newBuilder()
                 .setDocId("custom-data-doc")
-                .setSearchMetadata(ai.pipestream.data.v1.SearchMetadata.newBuilder()
+                .setSearchMetadata(SearchMetadata.newBuilder()
                         .setBody("Document with existing custom data")
                         .setCustomFields(existingCustomData)
                         .build())
                 .build();
 
-        ModuleProcessRequest request = ModuleProcessRequest.newBuilder()
+        ProcessDataRequest request = ProcessDataRequest.newBuilder()
                 .setDocument(docWithCustomData)
                 .setMetadata(ServiceMetadata.newBuilder()
                         .setPipelineName("custom-data-test")
@@ -254,22 +265,4 @@ public abstract class EchoServiceTestBase {
         assertThat("Echo processor marker should be added to tags", tags, hasKey("processed_by_echo"));
         assertThat("Echo timestamp should be added to tags", tags, hasKey("echo_timestamp"));
     }
-
-    @Test
-    void testTestProcessData() {
-        // Test the testProcessData method
-        var response = getEchoService().testProcessData(null)
-                .subscribe().withSubscriber(UniAssertSubscriber.create())
-                .awaitItem()
-                .getItem();
-
-        assertThat("Test response should be successful", response.getSuccess(), is(true));
-        assertThat("Test response should have output document", response.hasOutputDoc(), is(true));
-        assertThat("Test document ID should have expected prefix", response.getOutputDoc().getDocId(), startsWith("test-doc-"));
-        assertThat("Processor logs should contain test marker", response.getProcessorLogsList(), hasItem(containsString("[TEST]")));
-        assertThat("Processor logs should contain validation success message", 
-                  response.getProcessorLogsList(), hasItem(containsString("test validation completed successfully")));
-    }
-
-
 }

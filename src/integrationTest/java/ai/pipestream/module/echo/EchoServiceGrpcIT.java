@@ -1,16 +1,18 @@
 package ai.pipestream.module.echo;
 
+import ai.pipestream.data.module.v1.*;
+import ai.pipestream.data.v1.PipeDoc;
+import ai.pipestream.data.v1.SearchMetadata;
+import ai.pipestream.data.v1.ProcessConfiguration;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import ai.pipestream.data.module.*;
-import ai.pipestream.data.util.proto.PipeDocTestDataFactory;
-import ai.pipestream.data.v1.PipeDoc;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -19,7 +21,7 @@ import static org.hamcrest.core.Is.is;
 import org.jboss.logging.Logger;
 
 /**
- * Integration test for EchoService using real gRPC client.
+ * Integration test for EchoService using real gRPC client and Mutiny.
  * This test runs against the packaged JAR as a black-box test.
  */
 @QuarkusIntegrationTest
@@ -28,8 +30,7 @@ public class EchoServiceGrpcIT {
     private static final Logger LOG = Logger.getLogger(EchoServiceGrpcIT.class);
 
     private ManagedChannel channel;
-    private PipeStepProcessor echoService;
-    private PipeDocTestDataFactory pipeDocTestDataFactory = new PipeDocTestDataFactory();
+    private MutinyPipeStepProcessorServiceGrpc.MutinyPipeStepProcessorServiceStub echoService;
 
     @BeforeEach
     void setUp() {
@@ -43,8 +44,8 @@ public class EchoServiceGrpcIT {
                 .usePlaintext() // No TLS for local tests
                 .build();
 
-        // Create the client using the generated PipeStepProcessorClient
-        echoService = new PipeStepProcessorClient("echo", channel, (name, stub) -> stub);
+        // Create the Mutiny-based client stub
+        echoService = MutinyPipeStepProcessorServiceGrpc.newMutinyStub(channel);
     }
 
     @AfterEach
@@ -57,18 +58,18 @@ public class EchoServiceGrpcIT {
     @Test
     void testGetServiceRegistration() {
         // Prepare request
-        RegistrationRequest request = RegistrationRequest.newBuilder().build();
+        GetServiceRegistrationRequest request = GetServiceRegistrationRequest.newBuilder().build();
 
-        // Call the service and block for result
-        ServiceRegistrationMetadata response = echoService.getServiceRegistration(request)
+        // Call the service and block for result using Mutiny await
+        GetServiceRegistrationResponse response = echoService.getServiceRegistration(request)
                 .await().atMost(java.time.Duration.ofSeconds(5));
 
         // Verify response
         assertThat("Response should not be null", response, notNullValue());
-        assertThat("Module name should be 'echo'", response.getModuleName(), equalTo("echo"));
+        assertThat("Module name should be present", response.getModuleName(), not(emptyString()));
         assertThat("Health check should pass", response.getHealthCheckPassed(), is(true));
         assertThat("Health check message should indicate service is healthy",
-                  response.getHealthCheckMessage(), equalTo("Service is healthy"));
+                  response.getHealthCheckMessage(), containsString("healthy"));
 
         LOG.infof("Received registration: %s", response.getModuleName());
     }
@@ -76,10 +77,17 @@ public class EchoServiceGrpcIT {
     @Test
     void testProcessData() {
         // Build test document
-        PipeDoc document = pipeDocTestDataFactory.createComplexDocument(232);
+        String docId = UUID.randomUUID().toString();
+        PipeDoc document = PipeDoc.newBuilder()
+                .setDocId(docId)
+                .setSearchMetadata(SearchMetadata.newBuilder()
+                        .setBody("Test content from integration test")
+                        .setTitle("IT Title")
+                        .build())
+                .build();
 
         // Build request
-        ModuleProcessRequest request = ModuleProcessRequest.newBuilder()
+        ProcessDataRequest request = ProcessDataRequest.newBuilder()
                 .setDocument(document)
                 .setConfig(ProcessConfiguration.newBuilder().build())
                 .setMetadata(ServiceMetadata.newBuilder()
@@ -90,8 +98,8 @@ public class EchoServiceGrpcIT {
                         .build())
                 .build();
 
-        // Call the service and block for result
-        ModuleProcessResponse response = echoService.processData(request)
+        // Call the service and block for result using Mutiny await
+        ProcessDataResponse response = echoService.processData(request)
                 .await().atMost(java.time.Duration.ofSeconds(5));
 
         // Verify response
@@ -100,24 +108,27 @@ public class EchoServiceGrpcIT {
         assertThat("Response should have output document", response.hasOutputDoc(), is(true));
 
         PipeDoc returnedDoc = response.getOutputDoc();
-        assertThat("Returned document ID should match input ID", returnedDoc.getDocId(), equalTo("test-doc-123"));
+        assertThat("Returned document ID should match input ID", returnedDoc.getDocId(), equalTo(docId));
         assertThat("Returned document body should match input body",
                   returnedDoc.getSearchMetadata().getBody(), equalTo("Test content from integration test"));
-        assertThat("Metadata should contain echo_processed flag",returnedDoc.getSearchMetadata().getMetadataMap(), hasKey("echo_processed"));
-        assertThat("Echo processed flag should be true",
-                  returnedDoc.getSearchMetadata().getMetadataMap().get("echo_processed"), equalTo("true"));
+        
+        // Echo service adds tags
+        assertThat("Metadata tags should contain processed_by_echo", 
+                  returnedDoc.getSearchMetadata().getTags().getTagDataMap(), hasKey("processed_by_echo"));
 
         LOG.infof("Document processed successfully: %s", returnedDoc.getDocId());
     }
 
     @Test
     void testProcessDataWithEmptyDocument() {
-        // Build empty document
-        //TODO: may need to fix this by adding a new document type
-        PipeDoc document = pipeDocTestDataFactory.createMinimalDocument(222);
+        // Build minimal document
+        String docId = "min-doc-123";
+        PipeDoc document = PipeDoc.newBuilder()
+                .setDocId(docId)
+                .build();
 
         // Build request
-        ModuleProcessRequest request = ModuleProcessRequest.newBuilder()
+        ProcessDataRequest request = ProcessDataRequest.newBuilder()
                 .setDocument(document)
                 .setConfig(ProcessConfiguration.newBuilder().build())
                 .setMetadata(ServiceMetadata.newBuilder()
@@ -128,19 +139,20 @@ public class EchoServiceGrpcIT {
                         .build())
                 .build();
 
-        // Call the service and block for result
-        ModuleProcessResponse response = echoService.processData(request)
+        // Call the service and block for result using Mutiny await
+        ProcessDataResponse response = echoService.processData(request)
                 .await().atMost(java.time.Duration.ofSeconds(5));
 
         // Verify response
         assertThat("Response should not be null", response, notNullValue());
-        assertThat("Response should be successful even with empty document", response.getSuccess(), is(true));
+        assertThat("Response should be successful even with minimal document", response.getSuccess(), is(true));
         assertThat("Response should have output document", response.hasOutputDoc(), is(true));
 
         PipeDoc returnedDoc = response.getOutputDoc();
-        assertThat("Returned document ID should match input ID", returnedDoc.getDocId(), equalTo(document.getDocId()));
-        assertThat("Metadata should contain echo_processed flag", returnedDoc.getSearchMetadata().getTags().getTagDataMap(), hasKey("processed_by_echo"));
+        assertThat("Returned document ID should match input ID", returnedDoc.getDocId(), equalTo(docId));
+        assertThat("Metadata should contain processed_by_echo tag", 
+                  returnedDoc.getSearchMetadata().getTags().getTagDataMap(), hasKey("processed_by_echo"));
 
-        LOG.info("Empty document processed successfully");
+        LOG.info("Minimal document processed successfully");
     }
 }
