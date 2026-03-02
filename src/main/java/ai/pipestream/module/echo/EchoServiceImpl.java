@@ -1,5 +1,7 @@
 package ai.pipestream.module.echo;
 
+import ai.pipestream.api.annotation.GrpcServiceRegistration;
+import ai.pipestream.api.annotation.ProcessingBuffered;
 import ai.pipestream.data.module.v1.*;
 import ai.pipestream.data.v1.PipeDoc;
 import io.quarkus.grpc.GrpcService;
@@ -11,15 +13,31 @@ import org.jboss.logging.Logger;
 
 import java.time.Instant;
 
+/**
+ * Implementation of the PipeStepProcessorService that simply echos the input
+ * document back while adding some processing metadata.
+ * 
+ * This service serves as a baseline for document processing steps and
+ * provides a simple example of how to implement a module.
+ */
 @GrpcService
 @Singleton
 public class EchoServiceImpl implements PipeStepProcessorService {
 
     private static final Logger LOG = Logger.getLogger(EchoServiceImpl.class);
 
+    /**
+     * The name of this application, used in metadata tagging.
+     */
     @ConfigProperty(name = "quarkus.application.name", defaultValue = "echo-service")
     String applicationName;
 
+    /**
+     * Processes the incoming document by adding echo-specific metadata tags.
+     * 
+     * @param request The processing request containing the document
+     * @return A Uni containing the response with the modified document
+     */
     @Override
     public Uni<ProcessDataResponse> processData(ProcessDataRequest request) {
         LOG.debugf("Echo service received document: %s", 
@@ -79,6 +97,13 @@ public class EchoServiceImpl implements PipeStepProcessorService {
         return Uni.createFrom().item(response);
     }
 
+    /**
+     * Returns the service registration metadata for the echo module.
+     * Includes health status and operational capabilities.
+     * 
+     * @param request The registration request
+     * @return A Uni containing the registration response
+     */
     @Override
     public Uni<GetServiceRegistrationResponse> getServiceRegistration(GetServiceRegistrationRequest request) {
         LOG.debug("Echo service registration requested");
