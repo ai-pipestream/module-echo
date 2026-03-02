@@ -9,7 +9,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @QuarkusTest
 class EchoServiceTest extends EchoServiceTestBase {
 
-    @GrpcClient("echo-service")
+    @GrpcClient("echo")
     MutinyPipeStepProcessorServiceGrpc.MutinyPipeStepProcessorServiceStub echoService;
 
     @Inject

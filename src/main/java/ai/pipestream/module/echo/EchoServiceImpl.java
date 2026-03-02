@@ -1,7 +1,5 @@
 package ai.pipestream.module.echo;
 
-import ai.pipestream.api.annotation.GrpcServiceRegistration;
-import ai.pipestream.api.annotation.ProcessingBuffered;
 import ai.pipestream.data.module.v1.*;
 import ai.pipestream.data.v1.PipeDoc;
 import io.quarkus.grpc.GrpcService;

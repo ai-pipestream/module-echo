@@ -15,7 +15,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @TestProfile(NoRegistrationTestProfile.class)
 class EchoServiceNoRegistrationTest extends EchoServiceTestBase {
 
-    @GrpcClient("echo-service")
+    @GrpcClient("echo")
     MutinyPipeStepProcessorServiceGrpc.MutinyPipeStepProcessorServiceStub directClient;
 
     @Inject
