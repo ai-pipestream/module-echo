@@ -22,7 +22,8 @@ public class NoRegistrationTestProfile implements QuarkusTestProfile {
         config.put("pipestream.registration.enabled", "false");
         
         // Define direct address for dynamic-grpc to find the service without Consul
-        config.put("quarkus.dynamic-grpc.service.echo.address", "localhost:${quarkus.http.test-port}");
+        // Use the default gRPC port 9000 for tests if not overridden
+        config.put("quarkus.dynamic-grpc.service.echo.address", "localhost:${quarkus.http.test-port:9000}");
         
         return config;
     }
