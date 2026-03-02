@@ -20,6 +20,10 @@ public class NoRegistrationTestProfile implements QuarkusTestProfile {
         Map<String, String> config = new HashMap<>();
         // Explicitly disable registration using the correct platform property
         config.put("pipestream.registration.enabled", "false");
+        
+        // Define direct address for dynamic-grpc to find the service without Consul
+        config.put("quarkus.dynamic-grpc.service.echo.address", "localhost:${quarkus.http.test-port}");
+        
         return config;
     }
 }

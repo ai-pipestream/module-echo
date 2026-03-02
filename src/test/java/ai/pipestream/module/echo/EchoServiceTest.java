@@ -1,7 +1,7 @@
 package ai.pipestream.module.echo;
 
 import ai.pipestream.data.module.v1.MutinyPipeStepProcessorServiceGrpc;
-import io.quarkus.grpc.GrpcClient;
+import ai.pipestream.quarkus.dynamicgrpc.DynamicGrpcClientFactory;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -9,8 +9,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @QuarkusTest
 class EchoServiceTest extends EchoServiceTestBase {
 
-    @GrpcClient("echo")
-    MutinyPipeStepProcessorServiceGrpc.MutinyPipeStepProcessorServiceStub echoService;
+    @Inject
+    DynamicGrpcClientFactory dynamicGrpcClientFactory;
 
     @Inject
     @ConfigProperty(name = "quarkus.application.name")
@@ -23,6 +23,8 @@ class EchoServiceTest extends EchoServiceTestBase {
 
     @Override
     protected MutinyPipeStepProcessorServiceGrpc.MutinyPipeStepProcessorServiceStub getEchoService() {
-        return echoService;
+        // Use DynamicGrpcClientFactory to get the client, mimicking production usage
+        return dynamicGrpcClientFactory.getClient("echo", MutinyPipeStepProcessorServiceGrpc::newMutinyStub)
+                .await().indefinitely();
     }
 }

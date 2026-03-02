@@ -17,7 +17,7 @@ import static org.hamcrest.core.Is.is;
 
 /**
  * Base test class for Echo module testing.
- * Aligned with v1 protos.
+ * Aligned with v1 protos and explicit Mutiny types.
  */
 public abstract class EchoServiceTestBase {
 
@@ -64,7 +64,7 @@ public abstract class EchoServiceTestBase {
                 .setConfig(config)
                 .build();
 
-        // Execute and verify
+        // Execute and verify using explicit Mutiny stub
         var response = getEchoService().processData(request)
                 .subscribe().withSubscriber(UniAssertSubscriber.create())
                 .awaitItem()

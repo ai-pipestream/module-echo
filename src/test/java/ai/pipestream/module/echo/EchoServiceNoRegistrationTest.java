@@ -1,7 +1,7 @@
 package ai.pipestream.module.echo;
 
 import ai.pipestream.data.module.v1.MutinyPipeStepProcessorServiceGrpc;
-import io.quarkus.grpc.GrpcClient;
+import ai.pipestream.quarkus.dynamicgrpc.DynamicGrpcClientFactory;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
@@ -15,8 +15,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @TestProfile(NoRegistrationTestProfile.class)
 class EchoServiceNoRegistrationTest extends EchoServiceTestBase {
 
-    @GrpcClient("echo")
-    MutinyPipeStepProcessorServiceGrpc.MutinyPipeStepProcessorServiceStub directClient;
+    @Inject
+    DynamicGrpcClientFactory dynamicGrpcClientFactory;
 
     @Inject
     @ConfigProperty(name = "quarkus.application.name")
@@ -29,6 +29,7 @@ class EchoServiceNoRegistrationTest extends EchoServiceTestBase {
 
     @Override
     protected MutinyPipeStepProcessorServiceGrpc.MutinyPipeStepProcessorServiceStub getEchoService() {
-        return directClient;
+        return dynamicGrpcClientFactory.getClient("echo", MutinyPipeStepProcessorServiceGrpc::newMutinyStub)
+                .await().indefinitely();
     }
 }

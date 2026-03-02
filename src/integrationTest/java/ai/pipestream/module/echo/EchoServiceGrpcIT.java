@@ -30,7 +30,7 @@ public class EchoServiceGrpcIT {
     private static final Logger LOG = Logger.getLogger(EchoServiceGrpcIT.class);
 
     private ManagedChannel channel;
-    private MutinyPipeStepProcessorServiceGrpc.MutinyPipeStepProcessorServiceStub echoService;
+    private PipeStepProcessorService echoService;
 
     @BeforeEach
     void setUp() {
@@ -44,7 +44,7 @@ public class EchoServiceGrpcIT {
                 .usePlaintext() // No TLS for local tests
                 .build();
 
-        // Create the Mutiny-based client stub
+        // Create the Mutiny-based client stub using the service interface
         echoService = MutinyPipeStepProcessorServiceGrpc.newMutinyStub(channel);
     }
 
