@@ -7,7 +7,6 @@ import java.util.Map;
 
 /**
  * Test profile that explicitly disables registration.
- * This profile uses the application-no-registration.properties configuration.
  */
 public class NoRegistrationTestProfile implements QuarkusTestProfile {
     
@@ -19,12 +18,8 @@ public class NoRegistrationTestProfile implements QuarkusTestProfile {
     @Override
     public Map<String, String> getConfigOverrides() {
         Map<String, String> config = new HashMap<>();
-        // Explicitly disable registration - use correct property name from @IfBuildProperty
-        config.put("module.registration.enabled", "false");
-        // Use random port for tests with unified server
-//        config.put("quarkus.http.test-port", "");
-        config.put("quarkus.grpc.server.use-separate-server", "false");
-        // Don't configure echo client - let it use auto-test-config
+        // Explicitly disable registration using the correct platform property
+        config.put("pipestream.registration.enabled", "false");
         return config;
     }
 }
