@@ -87,14 +87,6 @@ java {
     withSourcesJar()
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir 'build/generated/source/proto/main/java'
-        }
-    }
-}
-
 test {
     systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
     jvmArgs = ["-Xmx4g", "-XX:MaxMetaspaceSize=512m", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED"]
