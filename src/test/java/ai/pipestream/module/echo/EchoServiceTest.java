@@ -20,8 +20,8 @@ class EchoServiceTest extends EchoServiceTestBase {
 
     @BeforeEach
     void setupConfig() {
-        // Programmatically set the dynamic-grpc address to use the actual random test port
-        int port = ConfigProvider.getConfig().getValue("quarkus.http.test-port", Integer.class);
+        // Programmatically set the dynamic-grpc address to use the actual random gRPC test port
+        int port = ConfigProvider.getConfig().getValue("quarkus.grpc.server.test-port", Integer.class);
         System.setProperty("quarkus.dynamic-grpc.service.echo.address", "localhost:" + port);
     }
 
