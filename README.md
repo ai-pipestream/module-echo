@@ -124,3 +124,131 @@ The JWT validation happens before your route handler ever fires — Quarkus OIDC
 ## What This Isn't Doing
 
 No body parsing. No JSON deserialization. No OpenSearch query model. The proxy literally does not know or care what OpenSearch query looks like — and that's the correct design.
+
+
+## IAM login
+
+The Vert.x proxy will forward the request bytes fine, but managed AWS OpenSearch requires every request to be **SigV4 signed** with the proxy's IAM role credentials. The proxy has to handle that signing — OpenSearch will reject anything unsigned or incorrectly signed.
+
+---
+
+## What Has To Happen On Every Request
+
+```
+Inbound request (has Okta JWT)
+  │
+  ├── Strip Authorization header (Okta JWT must NOT go to OpenSearch)
+  │
+  ├── Inject DLS headers (x-proxy-user, opensearch-security-roles)
+  │
+  ├── Sign request with proxy's IAM role (SigV4)
+  │     └── Authorization: AWS4-HMAC-SHA256 Credential=...
+  │
+  └── Forward signed request to OpenSearch
+```
+
+The SigV4 signature covers the headers and URL — but **not the body** for streaming requests, you can use `UNSIGNED-PAYLOAD`. This preserves the transparent body forwarding.
+
+---
+
+## The Signing Piece
+
+```xml
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>auth</artifactId>
+</dependency>
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>regions</artifactId>
+</dependency>
+```
+
+```java
+@ApplicationScoped
+public class SigV4Signer {
+
+    @ConfigProperty(name = "aws.region")
+    String region;
+
+    private final Aws4Signer signer = Aws4Signer.create();
+
+    public Map<String, String> signHeaders(
+            String method,
+            URI uri,
+            Map<String, String> existingHeaders) {
+
+        AwsCredentialsProvider credentialsProvider = 
+            DefaultCredentialsProvider.create(); // picks up IAM role automatically
+
+        SdkHttpFullRequest request = SdkHttpFullRequest.builder()
+            .method(SdkHttpMethod.fromValue(method))
+            .uri(uri)
+            .headers(existingHeaders.entrySet().stream()
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> List.of(e.getValue()))))
+            .putHeader("x-amz-content-sha256", "UNSIGNED-PAYLOAD") // ← don't touch body
+            .build();
+
+        Aws4SignerParams params = Aws4SignerParams.builder()
+            .awsCredentials(credentialsProvider.resolveCredentials())
+            .signingName("es")                   // "es" for OpenSearch
+            .signingRegion(Region.of(region))
+            .build();
+
+        SdkHttpFullRequest signed = signer.sign(request, params);
+
+        // return only the auth headers we need to inject
+        return Map.of(
+            "Authorization", signed.firstMatchingHeader("Authorization").orElseThrow(),
+            "x-amz-date", signed.firstMatchingHeader("x-amz-date").orElseThrow(),
+            "x-amz-security-token", signed.firstMatchingHeader("x-amz-security-token").orElse("")
+        );
+    }
+}
+```
+
+---
+
+## Updated Route
+
+```java
+return entitlementService.resolveRoles(user)
+    .flatMap(roles -> {
+        URI uri = URI.create("https://" + openSearchHost + ctx.request().uri());
+
+        // build headers for signing (without the Okta JWT)
+        Map<String, String> headers = Map.of(
+            "host", openSearchHost,
+            "x-proxy-user", user,
+            "opensearch-security-roles", String.join(",", roles),
+            "x-amz-content-sha256", "UNSIGNED-PAYLOAD"
+        );
+
+        Map<String, String> sigV4Headers = signer.signHeaders(
+            ctx.request().method().name(), uri, headers
+        );
+
+        MultiMap reqHeaders = ctx.request().headers();
+        reqHeaders.remove("Authorization");      // strip Okta JWT
+        sigV4Headers.forEach(reqHeaders::set);   // inject SigV4 + DLS headers
+
+        proxyService.proxy().handle(ctx.request());
+        return Uni.createFrom().voidItem();
+    });
+```
+
+---
+
+## On EC2/ECS/EKS — Zero Config
+
+`DefaultCredentialsProvider` automatically picks up the instance/task/pod IAM role from the metadata service. You don't manage credentials at all — AWS rotates them. This is exactly what zero-trust wants for workload identity: cryptographic, short-lived, automatically rotated.
+
+```
+EC2/ECS instance has IAM role: acl-proxy-role
+  └── OpenSearch domain policy accepts: arn:aws:iam::ACCOUNT:role/acl-proxy-role
+        └── No other role or identity can reach OpenSearch
+```
+
+The proxy's IAM role is its identity. No shared secrets, no API keys, no config files with credentials.
