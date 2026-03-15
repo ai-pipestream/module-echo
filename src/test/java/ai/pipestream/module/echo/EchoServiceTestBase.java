@@ -3,6 +3,7 @@ package ai.pipestream.module.echo;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import ai.pipestream.data.module.v1.*;
+import ai.pipestream.data.v1.LogEntry;
 import ai.pipestream.data.v1.PipeDoc;
 import ai.pipestream.data.v1.SearchMetadata;
 import ai.pipestream.data.v1.ProcessConfiguration;
@@ -74,8 +75,8 @@ public abstract class EchoServiceTestBase {
         assertThat("Response should have output document", response.hasOutputDoc(), is(true));
         assertThat("Output document ID should match input document ID", response.getOutputDoc().getDocId(), equalTo(testDoc.getDocId()));
         assertThat("Output document body should match input document body", response.getOutputDoc().getSearchMetadata().getBody(), equalTo(testDoc.getSearchMetadata().getBody()));
-        assertThat("Processor logs should not be empty", response.getProcessorLogsList(), is(not(empty())));
-        assertThat("Processor logs should contain success message", response.getProcessorLogsList(), hasItem(containsString("successfully processed")));
+        assertThat("Processor logs should not be empty", response.getLogEntriesList().stream().map(LogEntry::getMessage).toList(), is(not(empty())));
+        assertThat("Processor logs should contain success message", response.getLogEntriesList().stream().map(LogEntry::getMessage).toList(), hasItem(containsString("successfully processed")));
     }
 
     @Test
@@ -97,8 +98,8 @@ public abstract class EchoServiceTestBase {
 
         assertThat("Response should be successful even without document", response.getSuccess(), is(true));
         assertThat("Response should not have output document", response.hasOutputDoc(), is(false));
-        assertThat("Processor logs should not be empty", response.getProcessorLogsList(), is(not(empty())));
-        assertThat("Processor logs should contain success message", response.getProcessorLogsList(), hasItem(containsString("successfully processed")));
+        assertThat("Processor logs should not be empty", response.getLogEntriesList().stream().map(LogEntry::getMessage).toList(), is(not(empty())));
+        assertThat("Processor logs should contain success message", response.getLogEntriesList().stream().map(LogEntry::getMessage).toList(), hasItem(containsString("successfully processed")));
     }
 
     @Test
