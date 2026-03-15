@@ -1,6 +1,10 @@
 package ai.pipestream.module.echo;
 
 import ai.pipestream.data.module.v1.*;
+import ai.pipestream.data.v1.LogEntry;
+import ai.pipestream.data.v1.LogEntrySource;
+import ai.pipestream.data.v1.LogLevel;
+import ai.pipestream.data.v1.ModuleLogOrigin;
 import ai.pipestream.data.v1.PipeDoc;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
@@ -44,7 +48,7 @@ public class EchoServiceImpl implements PipeStepProcessorService {
         // Build response with success status
         ProcessDataResponse.Builder responseBuilder = ProcessDataResponse.newBuilder()
                 .setSuccess(true)
-                .addProcessorLogs("Echo service successfully processed document");
+                .addLogEntries(moduleLog("Echo service successfully processed document", LogLevel.LOG_LEVEL_INFO));
 
         // If there's a document, add metadata and echo it back
         if (request.hasDocument()) {
@@ -86,13 +90,23 @@ public class EchoServiceImpl implements PipeStepProcessorService {
 
             // Set the updated document in the response
             responseBuilder.setOutputDoc(docBuilder.build());
-            responseBuilder.addProcessorLogs("Echo service added metadata to document");
+            responseBuilder.addLogEntries(moduleLog("Echo service added metadata to document", LogLevel.LOG_LEVEL_INFO));
         }
 
         ProcessDataResponse response = responseBuilder.build();
         LOG.debugf("Echo service returning success: %s", response.getSuccess());
 
         return Uni.createFrom().item(response);
+    }
+
+    private static LogEntry moduleLog(String message, LogLevel level) {
+        return LogEntry.newBuilder()
+            .setSource(LogEntrySource.LOG_ENTRY_SOURCE_MODULE)
+            .setLevel(level)
+            .setMessage(message)
+            .setTimestampEpochMs(System.currentTimeMillis())
+            .setModule(ModuleLogOrigin.newBuilder().setModuleName("echo").build())
+            .build();
     }
 
     /**
