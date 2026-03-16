@@ -7,6 +7,7 @@ import ai.pipestream.data.v1.LogLevel;
 import ai.pipestream.data.v1.ModuleLogOrigin;
 import ai.pipestream.data.v1.PipeDoc;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.runtime.Quarkus;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -33,6 +34,21 @@ public class EchoServiceImpl implements PipeStepProcessorService {
      */
     @ConfigProperty(name = "quarkus.application.name", defaultValue = "echo-service")
     String applicationName;
+
+    @ConfigProperty(name = "quarkus.application.version", defaultValue = "unknown")
+    String appVersion;
+
+    @ConfigProperty(name = "quarkus.profile", defaultValue = "prod")
+    String activeProfile;
+
+    @ConfigProperty(name = "pipestream.build.commit", defaultValue = "unknown")
+    String buildCommit;
+
+    @ConfigProperty(name = "pipestream.build.branch", defaultValue = "unknown")
+    String buildBranch;
+
+    @ConfigProperty(name = "pipestream.build.time", defaultValue = "unknown")
+    String buildTime;
 
     /**
      * Processes the incoming document by adding echo-specific metadata tags.
@@ -123,7 +139,7 @@ public class EchoServiceImpl implements PipeStepProcessorService {
         // Build a more comprehensive registration response with metadata
         GetServiceRegistrationResponse.Builder responseBuilder = GetServiceRegistrationResponse.newBuilder()
                 .setModuleName(applicationName)
-                .setVersion("1.0.0")
+                .setVersion(appVersion)
                 .setDisplayName("Echo Service")
                 .setDescription("A simple echo module that returns documents with added metadata")
                 .setOwner("Rokkon Team")
@@ -144,6 +160,7 @@ public class EchoServiceImpl implements PipeStepProcessorService {
         responseBuilder
                 .putMetadata("implementation_language", "Java")
                 .putMetadata("jvm_version", System.getProperty("java.version"));
+        buildRegistrationMetadata().forEach(responseBuilder::putMetadata);
 
         // If test request is provided, perform health check
         if (request.hasTestRequest()) {
@@ -178,5 +195,26 @@ public class EchoServiceImpl implements PipeStepProcessorService {
                 .setHealthCheckMessage("Service is healthy");
             return Uni.createFrom().item(responseBuilder.build());
         }
+    }
+
+    private java.util.Map<String, String> buildRegistrationMetadata() {
+        java.util.Map<String, String> metadata = new java.util.HashMap<>();
+        metadata.put("build.version", appVersion);
+        metadata.put("build.commit", buildCommit);
+        metadata.put("build.branch", buildBranch);
+        metadata.put("build.time", buildTime);
+        metadata.put("runtime.java", System.getProperty("java.version", "unknown"));
+        metadata.put("runtime.quarkus", quarkusVersion());
+        metadata.put("runtime.profile", activeProfile);
+        metadata.put("runtime.hostname", System.getenv().getOrDefault("HOSTNAME", "unknown"));
+        return metadata;
+    }
+
+    private String quarkusVersion() {
+        Package quarkusPackage = Quarkus.class.getPackage();
+        if (quarkusPackage != null && quarkusPackage.getImplementationVersion() != null) {
+            return quarkusPackage.getImplementationVersion();
+        }
+        return "unknown";
     }
 }
