@@ -51,7 +51,7 @@ public class EchoServiceImpl implements PipeStepProcessorService {
 
         // Build response with success status
         ProcessDataResponse.Builder responseBuilder = ProcessDataResponse.newBuilder()
-                .setSuccess(true)
+                .setOutcome(ProcessingOutcome.PROCESSING_OUTCOME_SUCCESS)
                 .addLogEntries(moduleLog("Echo service successfully processed document", LogLevel.LOG_LEVEL_INFO));
 
         // If there's a document, add metadata and echo it back
@@ -98,7 +98,7 @@ public class EchoServiceImpl implements PipeStepProcessorService {
         }
 
         ProcessDataResponse response = responseBuilder.build();
-        LOG.debugf("Echo service returning success: %s", response.getSuccess());
+        LOG.debugf("Echo service returning outcome: %s", response.getOutcome());
 
         return Uni.createFrom().item(response);
     }
@@ -155,7 +155,7 @@ public class EchoServiceImpl implements PipeStepProcessorService {
             LOG.debug("Performing health check with test request");
             return processData(request.getTestRequest())
                 .map(processResponse -> {
-                    if (processResponse.getSuccess()) {
+                    if (processResponse.getOutcome() == ProcessingOutcome.PROCESSING_OUTCOME_SUCCESS) {
                         responseBuilder
                             .setHealthCheckPassed(true)
                             .setHealthCheckMessage("Echo module is healthy and functioning correctly");

@@ -1,6 +1,7 @@
 package ai.pipestream.module.echo;
 
 import ai.pipestream.data.module.v1.*;
+import ai.pipestream.data.module.v1.ProcessingOutcome;
 import ai.pipestream.data.v1.PipeDoc;
 import ai.pipestream.data.v1.SearchMetadata;
 import ai.pipestream.data.v1.ProcessConfiguration;
@@ -104,7 +105,7 @@ public class EchoServiceGrpcIT {
 
         // Verify response
         assertThat("Response should not be null", response, notNullValue());
-        assertThat("Response should be successful", response.getSuccess(), is(true));
+        assertThat("Response should be successful", response.getOutcome(), is(ProcessingOutcome.PROCESSING_OUTCOME_SUCCESS));
         assertThat("Response should have output document", response.hasOutputDoc(), is(true));
 
         PipeDoc returnedDoc = response.getOutputDoc();
@@ -145,7 +146,7 @@ public class EchoServiceGrpcIT {
 
         // Verify response
         assertThat("Response should not be null", response, notNullValue());
-        assertThat("Response should be successful even with minimal document", response.getSuccess(), is(true));
+        assertThat("Response should be successful even with minimal document", response.getOutcome(), is(ProcessingOutcome.PROCESSING_OUTCOME_SUCCESS));
         assertThat("Response should have output document", response.hasOutputDoc(), is(true));
 
         PipeDoc returnedDoc = response.getOutputDoc();

@@ -3,6 +3,7 @@ package ai.pipestream.module.echo;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import ai.pipestream.data.module.v1.*;
+import ai.pipestream.data.module.v1.ProcessingOutcome;
 import ai.pipestream.data.v1.LogEntry;
 import ai.pipestream.data.v1.PipeDoc;
 import ai.pipestream.data.v1.SearchMetadata;
@@ -71,7 +72,7 @@ public abstract class EchoServiceTestBase {
                 .awaitItem()
                 .getItem();
 
-        assertThat("Response should be successful", response.getSuccess(), is(true));
+        assertThat("Response should be successful", response.getOutcome(), is(ProcessingOutcome.PROCESSING_OUTCOME_SUCCESS));
         assertThat("Response should have output document", response.hasOutputDoc(), is(true));
         assertThat("Output document ID should match input document ID", response.getOutputDoc().getDocId(), equalTo(testDoc.getDocId()));
         assertThat("Output document body should match input document body", response.getOutputDoc().getSearchMetadata().getBody(), equalTo(testDoc.getSearchMetadata().getBody()));
@@ -96,7 +97,7 @@ public abstract class EchoServiceTestBase {
                 .awaitItem()
                 .getItem();
 
-        assertThat("Response should be successful even without document", response.getSuccess(), is(true));
+        assertThat("Response should be successful even without document", response.getOutcome(), is(ProcessingOutcome.PROCESSING_OUTCOME_SUCCESS));
         assertThat("Response should not have output document", response.hasOutputDoc(), is(false));
         assertThat("Processor logs should not be empty", response.getLogEntriesList().stream().map(LogEntry::getMessage).toList(), is(not(empty())));
         assertThat("Processor logs should contain success message", response.getLogEntriesList().stream().map(LogEntry::getMessage).toList(), hasItem(containsString("successfully processed")));
@@ -174,7 +175,7 @@ public abstract class EchoServiceTestBase {
                 .awaitItem()
                 .getItem();
 
-        assertThat("Response should be successful", response.getSuccess(), is(true));
+        assertThat("Response should be successful", response.getOutcome(), is(ProcessingOutcome.PROCESSING_OUTCOME_SUCCESS));
         assertThat("Response should have output document", response.hasOutputDoc(), is(true));
 
         var tags = response.getOutputDoc().getSearchMetadata().getTags().getTagDataMap();
@@ -213,7 +214,7 @@ public abstract class EchoServiceTestBase {
                 .awaitItem()
                 .getItem();
 
-        assertThat("Response should be successful", response.getSuccess(), is(true));
+        assertThat("Response should be successful", response.getOutcome(), is(ProcessingOutcome.PROCESSING_OUTCOME_SUCCESS));
         assertThat("Response should have output document", response.hasOutputDoc(), is(true));
         assertThat("Output document should have large body", 
                   response.getOutputDoc().getSearchMetadata().getBody().length(), 
@@ -249,7 +250,7 @@ public abstract class EchoServiceTestBase {
                 .awaitItem()
                 .getItem();
 
-        assertThat("Response should be successful", response.getSuccess(), is(true));
+        assertThat("Response should be successful", response.getOutcome(), is(ProcessingOutcome.PROCESSING_OUTCOME_SUCCESS));
         assertThat("Response should have output document", response.hasOutputDoc(), is(true));
 
         var customData = response.getOutputDoc().getSearchMetadata().getCustomFields().getFieldsMap();
