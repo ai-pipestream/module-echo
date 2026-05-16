@@ -58,6 +58,8 @@ dependencies {
     testImplementation platform("ai.pipestream:pipestream-bom:${pipestreamBomVersion}")
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation libs.assertj.core
+    // In-process gRPC for bidi wiring smoke test — version managed by BOM
+    testImplementation 'io.grpc:grpc-inprocess'
 
     runtimeOnly libs.quarkus.logging.manager
 }
