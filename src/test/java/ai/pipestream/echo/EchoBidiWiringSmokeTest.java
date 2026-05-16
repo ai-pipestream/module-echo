@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -196,8 +197,7 @@ class EchoBidiWiringSmokeTest {
         final CountDownLatch ackVerifiedLatch = new CountDownLatch(1);
 
         /** Tracks how many Hello messages this fake has received (first vs. subsequent). */
-        private final java.util.concurrent.atomic.AtomicInteger helloCount =
-                new java.util.concurrent.atomic.AtomicInteger(0);
+        private final AtomicInteger helloCount = new AtomicInteger(0);
 
         void setServedPipeStream(PipeStream pipeStream, String wuId) {
             this.servedPipeStream = pipeStream;
