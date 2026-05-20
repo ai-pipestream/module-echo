@@ -131,20 +131,13 @@ class EchoBidiWiringSmokeTest {
                         + (fakeEngineError != null ? fakeEngineError.getMessage() : ""))
                 .isNull();
 
-        // Verify Hello routing tuple was sent correctly
+        // Verify Hello carries the module-id routing key (cluster/graph_id/node_id
+        // were dropped — engine routes by module_id alone and per-work-unit
+        // graph/node identifiers ride on the PipeStream payload).
         WorkRequest helloRequest = fakeEngine.capturedHello.get();
         assertThat(helloRequest)
                 .as("fake engine must have captured a Hello WorkRequest")
                 .isNotNull();
-        assertThat(helloRequest.getHello().getCluster())
-                .as("Hello.cluster must match the WorkerLoopConfig")
-                .isEqualTo("smoke-cluster");
-        assertThat(helloRequest.getHello().getGraphId())
-                .as("Hello.graph_id must match the WorkerLoopConfig")
-                .isEqualTo("smoke-graph");
-        assertThat(helloRequest.getHello().getNodeId())
-                .as("Hello.node_id must match the WorkerLoopConfig")
-                .isEqualTo("smoke-node");
         assertThat(helloRequest.getHello().getModuleId())
                 .as("Hello.module_id must match the WorkerLoopConfig")
                 .isEqualTo("echo");
@@ -155,17 +148,16 @@ class EchoBidiWiringSmokeTest {
     private static WorkerLoopConfig testConfig() {
         return new WorkerLoopConfig() {
             @Override public boolean enabled()                  { return true; }
-            @Override public String cluster()                   { return "smoke-cluster"; }
-            @Override public String graphId()                   { return "smoke-graph"; }
-            @Override public String nodeId()                    { return "smoke-node"; }
             @Override public String moduleId()                  { return "echo"; }
             @Override public int concurrency()                  { return 1; }
+            @Override public int minConcurrency()               { return 1; }
             // Long heartbeat interval: suppress heartbeat traffic during the test
             @Override public Duration heartbeatInterval()       { return Duration.ofSeconds(60); }
             @Override public Duration reconnectInitialDelay()   { return Duration.ofMillis(50); }
             @Override public Duration reconnectMaxDelay()       { return Duration.ofSeconds(1); }
             // Short no-work retry so the loop exits quickly after AckConfirmed + NoWork
             @Override public Duration noWorkRetryAfter()        { return Duration.ofMillis(50); }
+            @Override public Duration firstResponseTimeout()   { return Duration.ofSeconds(5); }
         };
     }
 

@@ -35,7 +35,6 @@ pipestreamProtos {
 
     modules {
         register("common")
-        register("module-worker")
     }
 }
 
@@ -46,12 +45,18 @@ dependencies {
     // Core Quarkus dependencies
     implementation 'io.quarkus:quarkus-arc'
     implementation 'io.quarkus:quarkus-grpc'
+    implementation 'io.quarkus:quarkus-rest'
+    implementation 'io.quarkus:quarkus-rest-jackson'
+    implementation 'io.quarkus:quarkus-smallrye-health'
     implementation 'io.quarkus:quarkus-smallrye-stork'
 
     // Service Discovery dependencies for Consul
     implementation 'io.smallrye.stork:stork-service-discovery-consul'
+    implementation 'io.smallrye.reactive:smallrye-mutiny-vertx-consul-client'
 
     // Pipestream platform libraries — echo runs the ModuleWorkerLoop framework
+    implementation 'ai.pipestream:pipestream-service-registration'
+    implementation 'ai.pipestream:quarkus-dynamic-grpc'
     implementation 'ai.pipestream:pipestream-server'
 
     // Testing
