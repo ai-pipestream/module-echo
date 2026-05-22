@@ -10,6 +10,7 @@ import ai.pipestream.module.work.v1.WorkAck;
 import ai.pipestream.module.work.v1.WorkRequest;
 import ai.pipestream.module.work.v1.WorkResponse;
 import ai.pipestream.module.work.v1.WorkUnit;
+import ai.pipestream.server.work.ModuleWorkEngineClient;
 import ai.pipestream.server.work.ModuleWorkerLoop;
 import ai.pipestream.server.work.WorkerLoopConfig;
 import com.google.protobuf.Any;
@@ -31,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,7 +65,6 @@ class EchoBidiWiringSmokeTest {
 
     private String serverName;
     private Server server;
-    private ManagedChannel channel;
     private FakeEngine fakeEngine;
     private ModuleWorkerLoop<PipeStream> loop;
 
@@ -78,17 +79,28 @@ class EchoBidiWiringSmokeTest {
                 .build()
                 .start();
 
-        channel = InProcessChannelBuilder.forName(serverName)
-                .directExecutor()
-                .build();
+        AtomicReference<ManagedChannel> channelRef = new AtomicReference<>(
+                InProcessChannelBuilder.forName(serverName).directExecutor().build());
+        ModuleWorkEngineClient engineClient = new ModuleWorkEngineClient() {
+            @Override
+            public ModuleWorkServiceGrpc.ModuleWorkServiceStub stub() {
+                return ModuleWorkServiceGrpc.newStub(channelRef.get());
+            }
 
-        ModuleWorkServiceGrpc.ModuleWorkServiceStub stub =
-                ModuleWorkServiceGrpc.newStub(channel);
+            @Override
+            public void reconnect() {
+                ManagedChannel old = channelRef.getAndSet(
+                        InProcessChannelBuilder.forName(serverName).directExecutor().build());
+                if (old != null) {
+                    old.shutdownNow();
+                }
+            }
+        };
 
         loop = new ModuleWorkerLoop<>(
                 PipeStream.class,
                 new EchoProcessor(),
-                stub,
+                engineClient,
                 testConfig());
     }
 
@@ -96,9 +108,6 @@ class EchoBidiWiringSmokeTest {
     void stopAll() throws Exception {
         if (loop != null) {
             loop.onStop(new ShutdownEvent());
-        }
-        if (channel != null) {
-            channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
         }
         if (server != null) {
             server.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
@@ -149,6 +158,7 @@ class EchoBidiWiringSmokeTest {
         return new WorkerLoopConfig() {
             @Override public boolean enabled()                  { return true; }
             @Override public String moduleId()                  { return "echo"; }
+            @Override public String grpcClientName()            { return "engine"; }
             @Override public int concurrency()                  { return 1; }
             @Override public int minConcurrency()               { return 1; }
             // Long heartbeat interval: suppress heartbeat traffic during the test
