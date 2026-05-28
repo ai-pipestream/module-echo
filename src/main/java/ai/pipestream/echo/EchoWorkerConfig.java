@@ -1,9 +1,9 @@
 package ai.pipestream.echo;
 
 import ai.pipestream.data.v1.PipeStream;
-import ai.pipestream.server.work.ModuleWorkEngineClient;
-import ai.pipestream.server.work.ModuleWorkerLoop;
-import ai.pipestream.server.work.WorkerLoopConfig;
+import ai.pipestream.module.runtime.work.ModuleWorkEngineClient;
+import ai.pipestream.module.runtime.work.ModuleWorkerLoop;
+import ai.pipestream.module.runtime.work.WorkerLoopConfig;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;

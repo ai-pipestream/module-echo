@@ -58,6 +58,7 @@ dependencies {
     implementation 'ai.pipestream:pipestream-service-registration'
     implementation 'ai.pipestream:quarkus-dynamic-grpc'
     implementation 'ai.pipestream:pipestream-server'
+    implementation 'ai.pipestream:pipestream-module-runtime'
 
     // Testing
     testImplementation platform("ai.pipestream:pipestream-bom:${pipestreamBomVersion}")
