@@ -49,28 +49,34 @@ dependencies {
     implementation 'io.quarkus:quarkus-rest-jackson'
     implementation 'io.quarkus:quarkus-smallrye-health'
     implementation 'io.quarkus:quarkus-smallrye-stork'
+    implementation 'io.quarkus:quarkus-container-image-docker'
 
     // Service Discovery dependencies for Consul
     implementation 'io.smallrye.stork:stork-service-discovery-consul'
     implementation 'io.smallrye.reactive:smallrye-mutiny-vertx-consul-client'
 
     // Pipestream platform libraries — echo runs the ModuleWorkerLoop framework
+    implementation 'ai.pipestream:pipestream-quarkus-devservices'
     implementation 'ai.pipestream:pipestream-service-registration'
     implementation 'ai.pipestream:quarkus-dynamic-grpc'
     implementation 'ai.pipestream:pipestream-server'
     implementation 'ai.pipestream:pipestream-module-runtime'
+    implementation 'io.grpc:grpc-services'
 
     // Testing
     testImplementation platform("ai.pipestream:pipestream-bom:${pipestreamBomVersion}")
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation libs.assertj.core
+    testImplementation 'io.rest-assured:rest-assured'
     // In-process gRPC for bidi wiring smoke test — version managed by BOM
     testImplementation 'io.grpc:grpc-inprocess'
+    testImplementation 'io.grpc:grpc-netty'
+    testImplementation 'io.grpc:grpc-services'
 
     runtimeOnly libs.quarkus.logging.manager
 }
 
-group = 'ai.pipestream.echo'
+group = 'ai.pipestream.module'
 version = "${scmVersion.version}"
 
 java {
@@ -82,6 +88,17 @@ java {
 
 test {
     systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+    // Avoid clashing with other services on the default 8081 test port on shared dev hosts.
+    systemProperty "quarkus.http.port", "0"
+    systemProperty "quarkus.http.test-port", "0"
+    maxHeapSize = "4g"
+    jvmArgs = ["-Xmx4g", "-XX:MaxMetaspaceSize=512m", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED"]
+}
+
+tasks.named('quarkusIntTest').configure {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+    systemProperty "quarkus.http.port", "0"
+    systemProperty "quarkus.http.test-port", "0"
     maxHeapSize = "4g"
     jvmArgs = ["-Xmx4g", "-XX:MaxMetaspaceSize=512m", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED"]
 }
