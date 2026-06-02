@@ -1,11 +1,10 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
-        mavenCentral()
     }
 }
 
-rootProject.name = 'module-echo'
+rootProject.name = 'echo'
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)

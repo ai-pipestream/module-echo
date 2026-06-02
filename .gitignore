@@ -1,6 +1,8 @@
 # ---> Java
 # Compiled class file
 *.class
+bin
+.claude
 
 # Log file
 *.log
@@ -288,7 +290,3 @@ dist
 .idea
 build
 .claude
-.vscode
-.settings
-.DS_Store
-bin
