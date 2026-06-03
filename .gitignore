@@ -290,3 +290,5 @@ dist
 .idea
 build
 .claude
+# Gradle wrapper jar must be tracked so CI ./gradlew works
+!gradle/wrapper/gradle-wrapper.jar
