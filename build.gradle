@@ -58,7 +58,6 @@ dependencies {
     // Pipestream platform libraries — echo runs the ModuleWorkerLoop framework
     implementation 'ai.pipestream:pipestream-quarkus-devservices'
     implementation 'ai.pipestream:pipestream-service-registration'
-    implementation 'ai.pipestream:quarkus-dynamic-grpc'
     implementation 'ai.pipestream:pipestream-server'
     implementation 'ai.pipestream:pipestream-module-runtime'
     implementation 'io.grpc:grpc-services'
