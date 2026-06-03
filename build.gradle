@@ -137,7 +137,7 @@ publishing {
             pom { pom ->
                 name.set('Echo Module')
                 description.set('Echo Module for the Pipestream platform')
-                url.set('https://github.com/ai-pipestream/echo')
+                url.set('https://github.com/ai-pipestream/module-echo')
 
                 licenses {
                     license {
@@ -154,9 +154,9 @@ publishing {
                 }
 
                 scm {
-                    connection.set('scm:git:git://github.com/ai-pipestream/echo.git')
-                    developerConnection.set('scm:git:ssh://github.com/ai-pipestream/echo.git')
-                    url.set('https://github.com/ai-pipestream/echo')
+                    connection.set('scm:git:git://github.com/ai-pipestream/module-echo.git')
+                    developerConnection.set('scm:git:ssh://github.com/ai-pipestream/module-echo.git')
+                    url.set('https://github.com/ai-pipestream/module-echo')
                 }
             }
         }
@@ -168,7 +168,7 @@ publishing {
         if (System.getenv("GITHUB_ACTOR") != null) {
             maven {
                 name = "GitHubPackages"
-                url = uri("https://maven.pkg.github.com/ai-pipestream/echo")
+                url = uri("https://maven.pkg.github.com/ai-pipestream/module-echo")
                 credentials {
                     username = System.getenv("GITHUB_ACTOR")
                     password = System.getenv("GITHUB_TOKEN")
