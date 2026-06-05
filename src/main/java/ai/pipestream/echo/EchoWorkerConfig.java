@@ -3,6 +3,7 @@ package ai.pipestream.echo;
 import ai.pipestream.data.v1.PipeStream;
 import ai.pipestream.module.runtime.work.ModuleWorkEngineClient;
 import ai.pipestream.module.runtime.work.ModuleWorkerLoop;
+import ai.pipestream.module.runtime.work.RampController;
 import ai.pipestream.module.runtime.work.WorkerLoopConfig;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -20,12 +21,13 @@ public class EchoWorkerConfig {
 
     @Produces
     @Singleton
-    ModuleWorkerLoop<PipeStream> echoWorkerLoop(WorkerLoopConfig config) {
+    ModuleWorkerLoop<PipeStream> echoWorkerLoop(WorkerLoopConfig config, RampController rampController) {
         return new ModuleWorkerLoop<>(
                 PipeStream.class,
                 new EchoProcessor(),
                 engineClient,
-                config);
+                config,
+                rampController);
     }
 
     void onStart(@Observes StartupEvent ev, ModuleWorkerLoop<PipeStream> loop) {
