@@ -167,6 +167,9 @@ class EchoBidiWiringSmokeTest {
             // Short no-work retry so the loop exits quickly after AckConfirmed + NoWork
             @Override public Duration noWorkRetryAfter()        { return Duration.ofMillis(50); }
             @Override public Duration firstResponseTimeout()   { return Duration.ofSeconds(5); }
+            @Override public int idleRoundsBeforeExit()         { return 1; }
+            // Large threshold: never trigger stale-channel rebuild during the test.
+            @Override public Duration channelStaleThreshold()   { return Duration.ofSeconds(30); }
         };
     }
 
